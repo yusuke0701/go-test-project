@@ -1,18 +1,32 @@
 package main
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 )
 
-type temporary interface {
-	Temporary() bool
+func main() {
+	err := doSomething()
+	if err != nil {
+		if IsTemporary(err) {
+			fmt.Println("一時エラー")
+		}
+		fmt.Println(err.Error())
+	}
+}
+
+func doSomething() error {
+	return &tmperr{original: errors.New("エラー発生")}
 }
 
 //IsTemporary は一時エラーの場合は true を返す
 func IsTemporary(err error) bool {
 	te, ok := err.(temporary)
-	return ok && te.Temporary()
+	return ok && te.IsTemporary()
+}
+
+type temporary interface {
+	IsTemporary() bool
 }
 
 type tmperr struct {
@@ -22,25 +36,6 @@ type tmperr struct {
 func (err *tmperr) Error() string {
 	return err.original.Error()
 }
-func (err *tmperr) Temporary() bool {
+func (err *tmperr) IsTemporary() bool {
 	return true
-}
-func Temporary(err error) error {
-	return &tmperr{original: err}
-}
-
-func f() error {
-	return Temporary(errors.New("失敗しました"))
-}
-
-func main() {
-	err := f()
-	switch {
-	case err == nil:
-		fmt.Println("エラーなし")
-	case IsTemporary(err):
-		fmt.Println("一時エラー", err)
-	default:
-		fmt.Println("エラー", err)
-	}
 }
